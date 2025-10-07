@@ -1,0 +1,88 @@
+# IdeaSearch Streamlit App Default Configuration
+
+# 应用配置
+app:
+  title: "IdeaSearch 符号回归系统"
+  page_icon: "🔬"
+  layout: "wide"
+  initial_sidebar_state: "expanded"
+
+# 画布配置
+canvas:
+  width: 600
+  height: 400
+  drawing_mode: "freedraw"
+  stroke_width: 3
+  stroke_color: "#1f77b4"
+  background_color: "#ffffff"
+  update_streamlit: true
+
+# IdeaSearch 配置
+ideasearch:
+  # 岛屿和循环配置
+  island_num: 4
+  cycle_num: 4
+  unit_interaction_num: 6
+  
+  # 采样器配置
+  samplers_num: 3
+  sample_temperature: 20.0
+  
+  # 评估器配置
+  evaluators_num: 3
+  examples_num: 5
+  generate_num: 1
+  
+  # 高级配置
+  hand_over_threshold: -0.1
+  shutdown_score: 80.0
+  model_assess_average_order: 15.0
+  model_assess_initial_score: 20.0
+  record_prompt_in_diary: true
+
+# IdeaSearchFitter 配置
+fitter:
+  # 函数配置
+  available_functions:
+    - "sin"
+    - "cos"
+    - "tan"
+    - "arcsin"
+    - "arccos"
+    - "arctan"
+    - "tanh"
+    - "log"
+    - "log10"
+    - "exp"
+    - "square"
+    - "sqrt"
+    - "abs"
+  
+  # 常量配置
+  constant_whitelist: ["pi"]
+  constant_map:
+    pi: 3.141592653589793
+  
+  # 度量配置
+  metric_mapping: "logarithm"
+  baseline_metric_value: None
+  good_metric_value: None
+  
+  # Fuzzy 模式配置
+  generate_fuzzy: true
+  perform_unit_validation: false
+  auto_polish: true  # 启用自动润色以获得更好的变量描述
+
+# 数据处理配置
+data:
+  num_points: 100
+  x_min: -10.0
+  x_max: 10.0
+  smooth_data: false
+  interpolate_data: true
+
+# UI 配置
+ui:
+  show_debug_info: false
+  max_display_records: 50
+  update_interval: 1.0

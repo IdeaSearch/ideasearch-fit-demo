@@ -1,0 +1,52 @@
+{
+  "Deepseek_V3": [
+    {
+      "api_key": "your-deepseek-api-key-here",
+      "base_url": "https://api.deepseek.com/v1",
+      "model": "deepseek-chat"
+    }
+  ],
+  "Gemini_2.5_Flash": [
+    {
+      "api_key": "your-gemini-api-key-here",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "model": "gemini-2.0-flash-exp"
+    }
+  ],
+  "Gemini_2.5_Pro": [
+    {
+      "api_key": "your-gemini-api-key-here",
+      "base_url": "https://generativelanguage.googleapis.com/v1beta",
+      "model": "gemini-2.0-pro-exp"
+    }
+  ],
+  "Qwen_Plus": [
+    {
+      "api_key": "your-qwen-api-key-here",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "model": "qwen-plus"
+    }
+  ],
+  "Qwen_Max": [
+    {
+      "api_key": "your-qwen-api-key-here",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+      "model": "qwen-max"
+    }
+  ],
+  "GPT_4o": [
+    {
+      "api_key": "your-openai-api-key-here",
+      "base_url": "https://api.openai.com/v1",
+      "model": "gpt-4o"
+    }
+  ],
+  "GPT_4o_Mini": [
+    {
+      "api_key": "your-openai-api-key-here",
+      "base_url": "https://api.openai.com/v1",
+      "model": "gpt-4o-mini"
+    }
+  ],
+  "Comment": "如果使用第三方API代理，请修改 base_url"
+}

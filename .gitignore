@@ -1,0 +1,15 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+api_keys.json
+
+# Virtual environments
+.venv
+
+# Log files (keep directory structure but ignore content)
+logs/*
+!logs/.gitkeep
