@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime
 
-from ideasearch import IdeaSearcher
-from ideasearch_fit import IdeaSearchFitter
+from IdeaSearch import IdeaSearcher
+from IdeaSearch_fit import IdeaSearchFitter
 
 
 def print_flush(*args, **kwargs):

@@ -105,7 +105,7 @@ def render_api_calls_log(api_calls: List[Dict[str, Any]], max_display: int = 50)
         })
     
     df = pd.DataFrame(records)
-    st.dataframe(df, width='stretch', height=300)
+    st.dataframe(df, use_container_width=True, height=300)
     
     # 状态说明
     with st.expander("💡 状态图例"):
@@ -312,7 +312,7 @@ def render_pareto_frontier(pareto_data: Dict[int, Dict]) -> None:
                 '创建时间': info.get('created_at', 'N/A')
             })
         df = pd.DataFrame(records)
-        st.dataframe(df, width='stretch')
+        st.dataframe(df, use_container_width=True)
 
 
 def render_score_history(score_history: List[float], key_suffix: str = "") -> None:
@@ -324,6 +324,13 @@ def render_score_history(score_history: List[float], key_suffix: str = "") -> No
         key_suffix: 用于生成唯一 key 的后缀
     """
     st.markdown("### 📉 拟合历史")
+    
+    with st.expander("ℹ️ 分数计算说明", expanded=False):
+        st.write("**分数计算公式：**")
+        st.code("分数 = 80 - 60 × (mse / linear_mse)", language="text")
+        st.write("其中：")
+        st.write("- `mse`: 当前模型的均方误差")
+        st.write("- `linear_mse`: 线性拟合的均方误差（基准）")
     
     if not score_history:
         st.info("暂无历史数据")
