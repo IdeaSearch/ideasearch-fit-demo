@@ -68,6 +68,12 @@ fitter:
   baseline_metric_value: None
   good_metric_value: None
   
+  # 优化参数配置
+  enable_mutation: false 
+  enable_crossover: false
+  optimization_method: "L-BFGS-B"
+  optimization_trial_num: 5
+  
   # Fuzzy 模式配置
   generate_fuzzy: true
   perform_unit_validation: false

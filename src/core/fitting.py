@@ -143,6 +143,11 @@ class FittingEngine:
             'metric_mapping': "logarithm",
             'baseline_metric_value': 1.0e6,
             'good_metric_value': 1.0,
+            # 新增的优化参数
+            'enable_mutation': self.config.get('enable_mutation', False),
+            'enable_crossover': self.config.get('enable_crossover', False),
+            'optimization_method': self.config.get('optimization_method', 'L-BFGS-B'),
+            'optimization_trial_num': self.config.get('optimization_trial_num', 5),
         }
         
         # 如果有自定义fitter参数，则使用它们

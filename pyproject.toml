@@ -57,5 +57,10 @@ warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 
-[tool.uv]
-pypy-install-mirror = "https://pypi.org/simple/"
+[[tool.uv.index]]
+name = "pypi"
+url = "https://pypi.org/simple/"
+
+[[tool.uv.index]]
+name = "pku"
+url = "https://mirrors.pku.edu.cn/pypi/web/simple"

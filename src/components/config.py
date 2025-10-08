@@ -192,6 +192,35 @@ def render_sidebar_config() -> Dict[str, Any]:
                 help="用于将理论描述转换为表达式的模型"
             )
     
+    # 优化参数配置
+    with st.sidebar.expander("⚡ 优化参数"):
+        enable_mutation = st.checkbox(
+            "启用变异",
+            value=default_config['fitter'].get('enable_mutation', False),
+            help="启用表达式变异操作，增加搜索多样性"
+        )
+        
+        enable_crossover = st.checkbox(
+            "启用交叉",
+            value=default_config['fitter'].get('enable_crossover', False),
+            help="启用表达式交叉操作，结合不同表达式特征"
+        )
+        
+        optimization_method = st.selectbox(
+            "优化方法",
+            options=["L-BFGS-B", "differential-evolution"],
+            index=0 if default_config['fitter'].get('optimization_method', 'L-BFGS-B') == 'L-BFGS-B' else 1,
+            help="参数优化算法选择"
+        )
+        
+        optimization_trial_num = st.number_input(
+            "优化试验次数",
+            min_value=1,
+            max_value=1000,
+            value=default_config['fitter'].get('optimization_trial_num', 5),
+            help="每个表达式的参数优化试验次数，减小可显著提高拟合速度（推荐：5）"
+        )
+
     # 数据处理配置
     with st.sidebar.expander("📊 数据处理"):
         num_points = st.number_input(
@@ -241,6 +270,11 @@ def render_sidebar_config() -> Dict[str, Any]:
         'num_points': num_points,
         'smooth_data': smooth_data,
         'interpolate_data': interpolate_data,
+        # 新增的优化参数
+        'enable_mutation': enable_mutation,
+        'enable_crossover': enable_crossover,
+        'optimization_method': optimization_method,
+        'optimization_trial_num': optimization_trial_num,
         # 模型评估参数（从 default.yaml 读取）
         'model_assess_average_order': default_config['ideasearch'].get('model_assess_average_order', 15.0),
         'model_assess_initial_score': default_config['ideasearch'].get('model_assess_initial_score', 20.0),
