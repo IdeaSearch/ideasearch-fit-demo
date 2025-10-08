@@ -78,16 +78,47 @@ def render_api_calls_log(api_calls: List[Dict[str, Any]], max_display: int = 50)
     # 创建表格数据
     records = []
     for i, call in enumerate(display_calls, 1):
+        # 根据状态设置不同的显示风格
+        status = call.get('status', 'unknown')
+        expression_display = call.get('expression', 'N/A')
+        
+        # 对于过长的表达式，进行截断处理
+        if len(expression_display) > 50:
+            expression_display = expression_display[:47] + '...'
+        
+        # 根据状态添加状态标识
+        if status == 'no_expression':
+            expression_display = "⏳ " + expression_display
+        elif status == 'success' and call.get('score', 0) > 0:
+            expression_display = "✅ " + expression_display
+        else:
+            expression_display = "🔍 " + expression_display
+        
         records.append({
             '序号': len(api_calls) - max_display + i if len(api_calls) > max_display else i,
+            '循环': f"第{call.get('cycle', 'N/A')}轮",
             '模型': call.get('model', 'N/A'),
-            '表达式': call.get('expression', 'N/A')[:50] + '...' if len(call.get('expression', '')) > 50 else call.get('expression', 'N/A'),
-            '分数': f"{call.get('score', 0.0):.2f}",
-            '时间': call.get('timestamp', 'N/A'),
+            '表达式状态': expression_display,
+            '拟合分数': f"{call.get('score', 0.0):.4f}",
+            '调用次数': call.get('total_api_calls', 'N/A'),
+            '时间': call.get('timestamp', 'N/A')
         })
     
     df = pd.DataFrame(records)
     st.dataframe(df, width='stretch', height=300)
+    
+    # 状态说明
+    with st.expander("💡 状态图例"):
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.write("**✅ 成功找到表达式**")
+            st.write("已找到有效的拟合表达式")
+        with col2:
+            st.write("**⏳ 搜索中**")
+            st.write("正在搜索，尚未生成有效表达式")
+        with col3:
+            st.write("**🔍 探索中**")
+            st.write("模型正在探索不同的表达式")
     
     # 统计信息
     with st.expander("📈 调用统计"):
@@ -100,14 +131,50 @@ def render_api_calls_log(api_calls: List[Dict[str, Any]], max_display: int = 50)
                 model_counts[model] = model_counts.get(model, 0) + 1
             for model, count in sorted(model_counts.items(), key=lambda x: x[1], reverse=True):
                 st.write(f"- {model}: {count} 次")
+            
+            # 状态统计
+            st.write("**任务状态统计:**")
+            status_counts = {}
+            for call in api_calls:
+                status = call.get('status', 'unknown')
+                status_counts[status] = status_counts.get(status, 0) + 1
+            
+            status_labels = {
+                'success': '✅ 成功生成表达式',
+                'no_expression': '⏳ 搜索中',
+                'unknown': '🔍 探索中'
+            }
+            
+            for status, count in status_counts.items():
+                label = status_labels.get(status, f"未知状态({status})")
+                st.write(f"- {label}: {count} 次")
         
         with col2:
             st.write("**分数分布:**")
             scores = [call.get('score', 0) for call in api_calls]
             if scores:
-                st.write(f"- 平均分数: {np.mean(scores):.2f}")
-                st.write(f"- 最高分数: {np.max(scores):.2f}")
-                st.write(f"- 最低分数: {np.min(scores):.2f}")
+                valid_scores = [s for s in scores if s > 0]
+                if valid_scores:
+                    st.write(f"- 平均分数: {np.mean(scores):.4f}")
+                    st.write(f"- 最高分数: {np.max(scores):.4f}")
+                    st.write(f"- 最低分数: {np.min(scores):.4f}")
+                    st.write(f"- 有效分数记录: {len(valid_scores)}/{len(scores)}")
+                else:
+                    st.write(f"- 暂无有效分数")
+                    st.write(f"- 总记录数: {len(scores)}")
+            
+            # API调用效率
+            st.write("**API调用效率:**")
+            if api_calls:
+                latest_call = api_calls[-1]
+                total_calls = latest_call.get('total_api_calls', 0)
+                cycles = latest_call.get('cycle', 0)
+                if cycles > 0 and total_calls > 0:
+                    avg_calls_per_cycle = total_calls / cycles
+                    st.write(f"- 累计API调用: {total_calls}")
+                    st.write(f"- 每轮平均调用: {avg_calls_per_cycle:.1f}")
+                else:
+                    st.write("- 调用统计计算中...")
 
 
 def render_fitting_comparison(
@@ -161,7 +228,7 @@ def render_fitting_comparison(
         height=500
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="fitting_comparison_chart")
     
     # 显示拟合表达式
     if expression:
@@ -232,7 +299,7 @@ def render_pareto_frontier(pareto_data: Dict[int, Dict]) -> None:
         height=400
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True, key="pareto_frontier_chart")
     
     # 显示详细表格
     with st.expander("📋 查看详细数据"):

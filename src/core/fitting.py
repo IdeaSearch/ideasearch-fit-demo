@@ -7,21 +7,14 @@ import os
 import sys
 import re
 import time
-import tempfile
-import shutil
 import base64
 import numpy as np
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Callable
 from datetime import datetime
-import threading
 
-# 添加 IdeaSearch 路径
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "IdeaSearch-framework" / "src"))
-sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "IdeaSearch-fit"))
-
-from IdeaSearch import IdeaSearcher
-from IdeaSearch_fit import IdeaSearchFitter
+from ideasearch import IdeaSearcher
+from ideasearch_fit import IdeaSearchFitter
 
 
 def print_flush(*args, **kwargs):
@@ -452,21 +445,25 @@ class FittingEngine:
             print_flush(f"  ⚠️ 读取API日志失败: {e}, 使用估算值")
             self.total_api_calls += self.config['unit_interaction_num'] * self.config['island_num']
         
-        # 记录当前循环的最佳结果
-        if hasattr(self, 'best_expression') and self.best_expression:
-            call_record = {
-                'cycle': self.current_cycle,
-                'model': self.config['models'][0] if self.config['models'] else 'Unknown',
-                'expression': self.best_expression,
-                'score': self.best_score,
-                'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                'total_api_calls': self.total_api_calls,
-            }
-            self.api_calls_log.append(call_record)
-            
-            # 限制日志大小
-            if len(self.api_calls_log) > 1000:
-                self.api_calls_log = self.api_calls_log[-1000:]
+        # 无论是否有 best_expression，都记录当前循环的状态
+        # 这样即使没有找到有效表达式，也会有调用记录显示
+        expression_display = self.best_expression if hasattr(self, 'best_expression') and self.best_expression else "尚未生成有效表达式"
+        score_display = self.best_score if hasattr(self, 'best_score') and self.best_score is not None else 0.0
+        
+        call_record = {
+            'cycle': self.current_cycle,
+            'model': self.config['models'][0] if self.config['models'] else 'Unknown',
+            'expression': expression_display,
+            'score': score_display,
+            'timestamp': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'total_api_calls': self.total_api_calls,
+            'status': 'success' if (hasattr(self, 'best_expression') and self.best_expression) else 'no_expression'
+        }
+        self.api_calls_log.append(call_record)
+        
+        # 限制日志大小
+        if len(self.api_calls_log) > 1000:
+            self.api_calls_log = self.api_calls_log[-1000:]
     
     def stop_fitting(self) -> None:
         """停止拟合"""

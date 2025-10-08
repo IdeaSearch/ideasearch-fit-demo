@@ -13,3 +13,4 @@ api_keys.json
 # Log files (keep directory structure but ignore content)
 logs/*
 !logs/.gitkeep
+demo.py
