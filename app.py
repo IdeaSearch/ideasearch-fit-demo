@@ -22,12 +22,21 @@ from src.components.results import (
     render_api_calls_log
 )
 from src.core.fitting import FittingEngine
+from src.utils import t, get_supported_languages, get_current_language, set_language, get_language_flag
 import plotly.graph_objects as go
 
 # 页面配置
 default_config = load_default_config()
+
+# 如果session state中没有语言设置，使用默认语言
+if 'language' not in st.session_state:
+    st.session_state.language = 'zh_CN'  # 默认中文
+
+# 初始化语言设置
+set_language(st.session_state.language)
+
 st.set_page_config(
-    page_title=default_config['app']['title'],
+    page_title=t('app.title'),
     page_icon=default_config['app']['page_icon'],
     layout=default_config['app']['layout'],
     initial_sidebar_state=default_config['app']['initial_sidebar_state']
@@ -46,9 +55,32 @@ def init_session_state():
         st.session_state.fitting_running = False
 
 
+def render_language_selector():
+    """渲染语言选择器"""
+    languages = get_supported_languages()
+    current_lang = get_current_language()
+    
+    # 使用单选按钮代替下拉框，更直观
+    st.markdown("**🌐 Language / 语言**")
+    selected_lang = st.radio(
+        "选择语言",
+        options=list(languages.keys()),
+        format_func=lambda x: f"{get_language_flag(x)} {languages[x]}",
+        index=list(languages.keys()).index(current_lang),
+        key="language_selector",
+        label_visibility="collapsed",
+        horizontal=False
+    )
+    
+    # 如果语言改变，更新设置并重新运行
+    if selected_lang != current_lang:
+        set_language(selected_lang)
+        st.rerun()
+
+
 def tab_canvas_fitting():
     """Tab 1: 画布绘图拟合"""
-    st.markdown("## 🎨 绘制曲线拟合")
+    st.markdown(f"## {t('canvas.title')}")
     
     col_left, col_right = st.columns([1, 1])
     
@@ -71,34 +103,34 @@ def tab_canvas_fitting():
             if curve_data is not None:
                 x, y = curve_data
                 st.session_state.canvas_data = (x, y)
-                st.success(f"✅ 已提取 {len(x)} 个数据点")
+                st.success(t('canvas.data_extracted', count=len(x)))
             else:
-                st.info("请在画布上绘制曲线")
+                st.info(t('canvas.draw_instruction'))
     
     # 右侧：数据预览
     with col_right:
-        st.markdown("### 📊 数据预览")
+        st.markdown(f"### {t('canvas.data_preview')}")
         
         if st.session_state.canvas_data is not None:
             x, y = st.session_state.canvas_data
             
             col1, col2 = st.columns(2)
             with col1:
-                st.metric("X 范围", f"[{x.min():.2f}, {x.max():.2f}]")
+                st.metric(t('canvas.x_range'), f"[{x.min():.2f}, {x.max():.2f}]")
             with col2:
-                st.metric("Y 范围", f"[{y.min():.2f}, {y.max():.2f}]")
+                st.metric(t('canvas.y_range'), f"[{y.min():.2f}, {y.max():.2f}]")
             
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=x, y=y, mode='markers', marker=dict(size=6, color='#1f77b4')))
-            fig.update_layout(title="原始数据点", xaxis_title="x", yaxis_title="y", height=300, template='plotly_white')
+            fig.update_layout(title=t('canvas.scatter_plot'), xaxis_title=t('results.x_axis'), yaxis_title=t('results.y_axis'), height=300, template='plotly_white')
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.info("等待绘制数据...")
+            st.info(t('canvas.waiting_data'))
     
     st.markdown("---")
     
     # 拟合控制
-    st.markdown("### 🚀 拟合控制")
+    st.markdown(f"### {t('fitting.control_title')}")
     
     config = st.session_state.config
     can_start = (
@@ -108,7 +140,7 @@ def tab_canvas_fitting():
         not st.session_state.fitting_running
     )
     
-    if st.button("▶️ 开始拟合", disabled=not can_start, use_container_width=True):
+    if st.button(t('fitting.start_button'), disabled=not can_start, use_container_width=True):
         x, y = st.session_state.canvas_data
         
         # 创建实时更新的UI占位符
@@ -131,7 +163,7 @@ def tab_canvas_fitting():
         x_2d = x.reshape(-1, 1)
         
         # 初始化fitter和searcher
-        status_placeholder.info("🔧 初始化拟合引擎...")
+        status_placeholder.info(t('fitting.initializing'))
         engine.initialize_fitter(x_2d, y, yerr=None)
         engine.initialize_searcher(canvas_image)
         
@@ -139,7 +171,7 @@ def tab_canvas_fitting():
         engine.is_running = True
         engine.start_time = time.time()
         
-        status_placeholder.success("✅ 初始化完成，开始拟合...")
+        status_placeholder.success(t('fitting.init_complete'))
         
         # 主循环
         logs = []
@@ -159,7 +191,7 @@ def tab_canvas_fitting():
             if cycle != 0:
                 engine.ideasearcher.repopulate_islands()
             
-            status_placeholder.info(f"🔄 循环 {engine.current_cycle}/{total_cycles} 进行中...")
+            status_placeholder.info(t('fitting.cycle_progress', current=engine.current_cycle, total=total_cycles))
             
             # 运行 epochs
             for epoch in range(unit_epochs):
@@ -208,7 +240,7 @@ def tab_canvas_fitting():
                 
                 # 检查是否达到目标
                 if engine.best_score >= config['shutdown_score']:
-                    status_placeholder.success(f"🎯 达到目标分数 {config['shutdown_score']}！")
+                    status_placeholder.success(t('fitting.target_reached', score=config['shutdown_score']))
                     break
             
             # 记录分数历史
@@ -222,8 +254,8 @@ def tab_canvas_fitting():
         # 完成
         engine.is_running = False
         st.session_state.fitting_engine = engine
-        status_placeholder.success(f"✨ 拟合完成！最终分数: {engine.best_score:.4f}")
-        progress_placeholder.progress(1.0, text="已完成")
+        status_placeholder.success(t('fitting.fitting_complete', score=engine.best_score))
+        progress_placeholder.progress(1.0, text=t('fitting.completed'))
     
     # 显示拟合结果
     if st.session_state.fitting_engine is not None:
@@ -255,15 +287,15 @@ def tab_canvas_fitting():
 
 def tab_npz_fitting():
     """Tab 2: NPZ文件上传拟合（含高级配置）"""
-    st.markdown("## 📁 上传文件拟合")
-    st.markdown("支持NPZ数据文件上传，并提供完整的变量和单位配置")
+    st.markdown(f"## {t('file_upload.title')}")
+    st.markdown(t('file_upload.description'))
     
     # 文件上传
-    st.markdown("### 📤 上传数据文件")
+    st.markdown(f"### {t('file_upload.upload_data')}")
     uploaded_file = st.file_uploader(
-        "选择 NPZ 文件",
+        t('file_upload.select_file'),
         type=['npz'],
-        help="上传包含 'x', 'y' 和可选 'error' 键的 NPZ 文件"
+        help=t('file_upload.file_help')
     )
     
     if uploaded_file is not None:
@@ -271,7 +303,7 @@ def tab_npz_fitting():
             npz_data = np.load(uploaded_file)
             
             if 'x' not in npz_data or 'y' not in npz_data:
-                st.error("❌ NPZ文件必须包含 'x' 和 'y' 键！")
+                st.error(t('file_upload.error_missing_keys'))
                 return
             
             x = npz_data['x']
@@ -279,60 +311,60 @@ def tab_npz_fitting():
             yerr = npz_data['error'] if 'error' in npz_data else None
             
             if x.ndim != 2:
-                st.error("❌ 输入数据 'x' 必须是2维数组 (n_samples, n_features)！")
+                st.error(t('file_upload.error_x_dimension'))
                 return
             if y.ndim != 1:
-                st.error("❌ 输出数据 'y' 必须是1维数组 (n_samples,)！")
+                st.error(t('file_upload.error_y_dimension'))
                 return
             
             st.session_state.npz_data = (x, y, yerr)
-            st.success(f"✅ 成功加载数据：{x.shape[0]} 个样本，{x.shape[1]} 个特征")
+            st.success(t('file_upload.success_loaded', samples=x.shape[0], features=x.shape[1]))
             
             # 数据预览
-            st.markdown("### 📊 数据预览")
+            st.markdown(f"### {t('file_upload.data_preview')}")
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("样本数", x.shape[0])
+                st.metric(t('file_upload.samples'), x.shape[0])
             with col2:
-                st.metric("特征数", x.shape[1])
+                st.metric(t('file_upload.features'), x.shape[1])
             with col3:
-                st.metric("包含误差", "是" if yerr is not None else "否")
+                st.metric(t('file_upload.has_error'), t('file_upload.yes') if yerr is not None else t('file_upload.no'))
             
             # 对于1维特征,显示数据散点图
             if x.shape[1] == 1:
-                st.markdown("### 📈 数据可视化")
+                st.markdown(f"### {t('file_upload.visualization')}")
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(x=x[:, 0], y=y, mode='markers', name='数据点', marker=dict(size=6)))
+                fig.add_trace(go.Scatter(x=x[:, 0], y=y, mode='markers', name=t('file_upload.data_points'), marker=dict(size=6)))
                 if yerr is not None:
                     fig.add_trace(go.Scatter(
                         x=x[:, 0], y=y, 
                         error_y=dict(type='data', array=yerr, visible=True),
-                        mode='markers', name='带误差', marker=dict(size=4, opacity=0.5)
+                        mode='markers', name=t('file_upload.with_error'), marker=dict(size=4, opacity=0.5)
                     ))
-                fig.update_layout(title="数据散点图", xaxis_title="x1", yaxis_title="y", height=300, template='plotly_white')
+                fig.update_layout(title=t('file_upload.scatter_plot'), xaxis_title="x1", yaxis_title="y", height=300, template='plotly_white')
                 st.plotly_chart(fig, use_container_width=True, key="npz_preview_chart")
             
             # 显示数据范围
-            st.markdown("### 📋 数据范围")
+            st.markdown(f"### {t('file_upload.data_range')}")
             for i in range(min(x.shape[1], 5)):  # 最多显示前5个特征
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.metric(f"x{i+1} 范围", f"[{x[:, i].min():.4f}, {x[:, i].max():.4f}]")
+                    st.metric(t('file_upload.x_feature_range', index=i+1), f"[{x[:, i].min():.4f}, {x[:, i].max():.4f}]")
                 with col2:
-                    st.metric(f"x{i+1} 均值", f"{x[:, i].mean():.4f}")
+                    st.metric(t('file_upload.x_feature_mean', index=i+1), f"{x[:, i].mean():.4f}")
             
             col1, col2 = st.columns(2)
             with col1:
-                st.metric("y 范围", f"[{y.min():.4f}, {y.max():.4f}]")
+                st.metric(t('file_upload.y_range'), f"[{y.min():.4f}, {y.max():.4f}]")
             with col2:
-                st.metric("y 均值", f"{y.mean():.4f}")
+                st.metric(t('file_upload.y_mean'), f"{y.mean():.4f}")
             
         except Exception as e:
             st.error(f"❌ 加载文件出错: {str(e)}")
             return
     
     if st.session_state.npz_data is None:
-        st.info("👆 请上传NPZ数据文件以继续配置")
+        st.info(t('file_upload.upload_instruction'))
         return
     
     x, y, yerr = st.session_state.npz_data
@@ -736,9 +768,15 @@ def main():
     """主函数"""
     init_session_state()
     
-    # 标题
-    st.title("🔬 IdeaSearch 符号回归系统")
-    st.markdown("基于大语言模型的智能符号回归 - 支持绘图拟合和文件上传拟合")
+    # 标题和语言选择器 - 优化布局
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        st.title(t('app.title'))
+        st.markdown(t('app.subtitle'))
+    with col2:
+        st.markdown("")  # 添加一些垂直空间
+        render_language_selector()
+    
     st.markdown("---")
     
     # 侧边栏配置
@@ -746,7 +784,7 @@ def main():
     st.session_state.config = config
     
     # Tab切换 - 2个标签页
-    tab1, tab2 = st.tabs(["🎨 绘制曲线拟合", "📁 上传文件拟合"])
+    tab1, tab2 = st.tabs([t('navigation.canvas_fitting'), t('navigation.file_fitting')])
     
     with tab1:
         tab_canvas_fitting()
@@ -756,10 +794,9 @@ def main():
     
     # 页脚
     st.markdown("---")
-    st.markdown("""
+    st.markdown(f"""
         <div style='text-align: center; color: gray; padding: 20px;'>
-            <p>🔬 Powered by IdeaSearch Framework | Built with Streamlit</p>
-            <p>基于大语言模型的智能符号回归系统</p>
+            <p>{t('app.powered_by')}</p>
         </div>
     """, unsafe_allow_html=True)
 

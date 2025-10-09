@@ -8,6 +8,7 @@ import yaml
 import json
 from pathlib import Path
 from typing import Dict, List, Any
+from ..utils import t
 
 
 def load_default_config() -> Dict[str, Any]:
@@ -37,14 +38,14 @@ def render_sidebar_config() -> Dict[str, Any]:
     """
     default_config = load_default_config()
     
-    st.sidebar.markdown("# ⚙️ 配置参数")
+    st.sidebar.markdown(f"# {t('config.sidebar_title')}")
     
     # API 配置
-    st.sidebar.markdown("## 🔑 API 配置")
+    st.sidebar.markdown(f"## {t('config.api_config')}")
     api_keys_path = st.sidebar.text_input(
-        "API 密钥文件路径",
+        t('config.api_keys_path'),
         value="api_keys.json",
-        help="指定包含 API 密钥的 JSON 文件路径"
+        help=t('config.api_keys_help')
     )
     
     # 加载可用模型
@@ -54,31 +55,31 @@ def render_sidebar_config() -> Dict[str, Any]:
         # 优先选择 Gemini_2.5_Flash，否则选择第一个
         default_model = 'Gemini_2.5_Flash' if 'Gemini_2.5_Flash' in available_models else (available_models[0] if available_models else None)
         selected_models = st.sidebar.multiselect(
-            "选择模型",
+            t('config.select_models'),
             options=available_models,
             default=[default_model] if default_model else [],
-            help="选择一个或多个 LLM 模型进行拟合"
+            help=t('config.models_help')
         )
     else:
         selected_models = []
-        st.sidebar.warning("未找到可用模型，请检查 API 密钥文件")
+        st.sidebar.warning(t('config.no_models_warning'))
     
     # 函数配置
-    st.sidebar.markdown("## 📐 函数配置")
+    st.sidebar.markdown(f"## {t('config.function_config')}")
     available_functions = default_config['fitter']['available_functions']
     
     selected_functions = st.sidebar.multiselect(
-        "可用函数",
+        t('config.available_functions'),
         options=available_functions,
         default=available_functions,
-        help="选择拟合时可以使用的数学函数"
+        help=t('config.functions_help')
     )
     
     # 常量配置
     use_constants = st.sidebar.checkbox(
-        "使用预定义常量",
+        t('config.use_constants'),
         value=True,
-        help="允许在表达式中使用预定义的数学常量（如 π）"
+        help=t('config.constants_help')
     )
     
     constant_whitelist = []
@@ -88,97 +89,97 @@ def render_sidebar_config() -> Dict[str, Any]:
         constant_map = {"pi": 3.141592653589793}
     
     # 拟合参数
-    st.sidebar.markdown("## 🎯 拟合参数")
+    st.sidebar.markdown(f"## {t('config.fitting_params')}")
     
     island_num = st.sidebar.number_input(
-        "岛屿数量",
+        t('config.island_num'),
         min_value=1,
         max_value=20,
         value=default_config['ideasearch']['island_num'],
-        help="并行进化的种群数量，增加可提高多样性"
+        help=t('config.island_help')
     )
     
     cycle_num = st.sidebar.number_input(
-        "循环次数",
+        t('config.cycle_num'),
         min_value=1,
         max_value=100,
         value=default_config['ideasearch']['cycle_num'],
-        help="进化算法的代数，更多循环通常得到更好结果"
+        help=t('config.cycle_help')
     )
     
     unit_interaction_num = st.sidebar.number_input(
-        "单元交互数",
+        t('config.unit_interaction_num'),
         min_value=1,
         max_value=100,
         value=default_config['ideasearch']['unit_interaction_num'],
-        help="每个循环中的 LLM 调用次数"
+        help=t('config.interaction_help')
     )
     
     shutdown_score = st.sidebar.slider(
-        "目标分数",
+        t('config.shutdown_score'),
         min_value=0.0,
         max_value=100.0,
         value=default_config['ideasearch']['shutdown_score'],
-        help="达到此分数时自动停止拟合"
+        help=t('config.score_help')
     )
     
     # 高级参数
-    with st.sidebar.expander("🔧 高级参数"):
+    with st.sidebar.expander(t('config.advanced_params')):
         samplers_num = st.number_input(
-            "采样器数量",
+            t('config.samplers_num'),
             min_value=1,
             max_value=10,
             value=default_config['ideasearch']['samplers_num'],
-            help="并行采样的工作线程数"
+            help=t('config.samplers_help')
         )
         
         evaluators_num = st.number_input(
-            "评估器数量",
+            t('config.evaluators_num'),
             min_value=1,
             max_value=10,
             value=default_config['ideasearch']['evaluators_num'],
-            help="并行评估的工作线程数"
+            help=t('config.evaluators_help')
         )
         
         sample_temperature = st.slider(
-            "采样温度",
+            t('config.sample_temperature'),
             min_value=0.0,
             max_value=100.0,
             value=float(default_config['ideasearch']['sample_temperature']),
-            help="控制生成的随机性，越高越随机"
+            help=t('config.temperature_help')
         )
         
         examples_num = st.number_input(
-            "示例数量",
+            t('config.examples_num'),
             min_value=1,
             max_value=10,
             value=default_config['ideasearch']['examples_num'],
-            help="每次提示中包含的示例数量"
+            help=t('config.examples_help')
         )
         
         generate_num = st.number_input(
-            "每次生成数",
+            t('config.generate_num'),
             min_value=1,
             max_value=10,
             value=default_config['ideasearch']['generate_num'],
-            help="每次 LLM 调用生成的表达式数量"
+            help=t('config.generate_help')
         )
         
         hand_over_threshold = st.slider(
-            "交接阈值",
+            t('config.hand_over_threshold'),
             min_value=-1.0,
             max_value=1.0,
             value=float(default_config['ideasearch']['hand_over_threshold']),
             step=0.1,
-            help="岛屿间交换想法的分数阈值"
+            help=t('config.threshold_help')
         )
     
     # Fuzzy 模式配置
-    with st.sidebar.expander("🧠 Fuzzy 模式"):
+    with st.sidebar.expander(t('config.fuzzy_mode')):
         generate_fuzzy = st.checkbox(
-            "启用 Fuzzy 模式",
+            t('config.enable_fuzzy'),
             value=default_config['fitter']['generate_fuzzy'],
-            help="使用自然语言理论描述作为中间步骤"
+            help=t('config.fuzzy_help')
         )
         
         fuzzy_translator = None
@@ -186,61 +187,61 @@ def render_sidebar_config() -> Dict[str, Any]:
             # 优先使用 Gemini_2.5_Flash
             default_idx = available_models.index('Gemini_2.5_Flash') if 'Gemini_2.5_Flash' in available_models else 0
             fuzzy_translator = st.selectbox(
-                "Fuzzy 翻译器模型",
+                t('config.fuzzy_translator'),
                 options=available_models,
                 index=default_idx,
-                help="用于将理论描述转换为表达式的模型"
+                help=t('config.translator_help')
             )
     
     # 优化参数配置
-    with st.sidebar.expander("⚡ 优化参数"):
+    with st.sidebar.expander(t('config.optimization_params')):
         enable_mutation = st.checkbox(
-            "启用变异",
+            t('config.enable_mutation'),
             value=default_config['fitter'].get('enable_mutation', False),
-            help="启用表达式变异操作，增加搜索多样性"
+            help=t('config.mutation_help')
         )
         
         enable_crossover = st.checkbox(
-            "启用交叉",
+            t('config.enable_crossover'),
             value=default_config['fitter'].get('enable_crossover', False),
-            help="启用表达式交叉操作，结合不同表达式特征"
+            help=t('config.crossover_help')
         )
         
         optimization_method = st.selectbox(
-            "优化方法",
+            t('config.optimization_method'),
             options=["L-BFGS-B", "differential-evolution"],
             index=0 if default_config['fitter'].get('optimization_method', 'L-BFGS-B') == 'L-BFGS-B' else 1,
-            help="参数优化算法选择"
+            help=t('config.method_help')
         )
         
         optimization_trial_num = st.number_input(
-            "优化试验次数",
+            t('config.optimization_trial_num'),
             min_value=1,
             max_value=1000,
             value=default_config['fitter'].get('optimization_trial_num', 5),
-            help="每个表达式的参数优化试验次数，减小可显著提高拟合速度（推荐：5）"
+            help=t('config.trial_help')
         )
 
     # 数据处理配置
-    with st.sidebar.expander("📊 数据处理"):
+    with st.sidebar.expander(t('config.data_processing')):
         num_points = st.number_input(
-            "数据点数",
+            t('config.num_points'),
             min_value=10,
             max_value=1000,
             value=default_config['data']['num_points'],
-            help="插值后的数据点数量"
+            help=t('config.points_help')
         )
         
         smooth_data = st.checkbox(
-            "数据平滑",
+            t('config.smooth_data'),
             value=default_config['data']['smooth_data'],
-            help="对绘制的曲线进行平滑处理"
+            help=t('config.smooth_help')
         )
         
         interpolate_data = st.checkbox(
-            "数据插值",
+            t('config.interpolate_data'),
             value=default_config['data']['interpolate_data'],
-            help="对数据点进行插值以获得更均匀的分布"
+            help=t('config.interpolate_help')
         )
     
     # 为每个模型生成温度配置

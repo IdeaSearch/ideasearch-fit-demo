@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Any, Optional
+from ..utils import t
 
 
 def render_progress_section(state: Dict[str, Any]) -> None:
@@ -17,14 +18,14 @@ def render_progress_section(state: Dict[str, Any]) -> None:
     Args:
         state: 拟合状态字典
     """
-    st.markdown("### 📊 拟合进度")
+    st.markdown(f"### {t('progress.title')}")
     
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         current_cycle = state.get('current_cycle', 0)
         total_cycles = state.get('total_cycles', 0)
-        st.metric("当前循环", f"{current_cycle}/{total_cycles}")
+        st.metric(t('progress.current_cycle'), f"{current_cycle}/{total_cycles}")
     
     with col2:
         best_score = state.get('best_score', 0.0)
@@ -33,13 +34,13 @@ def render_progress_section(state: Dict[str, Any]) -> None:
         delta = None
         if len(score_history) >= 2:
             delta = score_history[-1] - score_history[-2]
-        st.metric("最佳分数", f"{best_score:.4f}", delta=f"{delta:.4f}" if delta is not None else None)
+        st.metric(t('progress.best_score'), f"{best_score:.4f}", delta=f"{delta:.4f}" if delta is not None else None)
     
     with col3:
         total_api_calls = state.get('total_api_calls', 0)
         # 估算平均每循环的API调用数
         avg_calls = total_api_calls / current_cycle if current_cycle > 0 else 0
-        st.metric("API 调用", f"{total_api_calls}", delta=f"平均 {avg_calls:.1f}/循环" if avg_calls > 0 else None, delta_color="off")
+        st.metric(t('progress.api_calls'), f"{total_api_calls}", delta=t('progress.avg_per_cycle', avg=avg_calls) if avg_calls > 0 else None, delta_color="off")
     
     with col4:
         elapsed_time = state.get('elapsed_time', 0.0)
@@ -47,14 +48,14 @@ def render_progress_section(state: Dict[str, Any]) -> None:
         if current_cycle > 0 and total_cycles > current_cycle:
             avg_time_per_cycle = elapsed_time / current_cycle
             remaining_time = avg_time_per_cycle * (total_cycles - current_cycle)
-            st.metric("已用时间", f"{elapsed_time:.1f}s", delta=f"预计剩余 {remaining_time:.1f}s", delta_color="off")
+            st.metric(t('progress.elapsed_time'), f"{elapsed_time:.1f}s", delta=t('progress.remaining_time', time=remaining_time), delta_color="off")
         else:
-            st.metric("已用时间", f"{elapsed_time:.1f}s")
+            st.metric(t('progress.elapsed_time'), f"{elapsed_time:.1f}s")
     
     # 进度条（带百分比）
     if total_cycles > 0:
         progress = current_cycle / total_cycles
-        progress_text = f"进度: {progress*100:.1f}% ({current_cycle}/{total_cycles} 循环)"
+        progress_text = t('progress.progress_text', progress=progress*100, current=current_cycle, total=total_cycles)
         st.progress(progress, text=progress_text)
 
 
@@ -66,10 +67,10 @@ def render_api_calls_log(api_calls: List[Dict[str, Any]], max_display: int = 50)
         api_calls: API 调用记录列表
         max_display: 最大显示记录数
     """
-    st.markdown("### 📝 模型调用记录")
+    st.markdown(f"### {t('api_calls.title')}")
     
     if not api_calls:
-        st.info("暂无调用记录")
+        st.info(t('api_calls.no_records'))
         return
     
     # 显示最新的记录
@@ -95,36 +96,36 @@ def render_api_calls_log(api_calls: List[Dict[str, Any]], max_display: int = 50)
             expression_display = "🔍 " + expression_display
         
         records.append({
-            '序号': len(api_calls) - max_display + i if len(api_calls) > max_display else i,
-            '循环': f"第{call.get('cycle', 'N/A')}轮",
-            '模型': call.get('model', 'N/A'),
-            '表达式状态': expression_display,
-            '拟合分数': f"{call.get('score', 0.0):.4f}",
-            '调用次数': call.get('total_api_calls', 'N/A'),
-            '时间': call.get('timestamp', 'N/A')
+            t('api_calls.sequence'): len(api_calls) - max_display + i if len(api_calls) > max_display else i,
+            t('api_calls.cycle'): t('api_calls.cycle_format', cycle=call.get('cycle', 'N/A')),
+            t('api_calls.model'): call.get('model', 'N/A'),
+            t('api_calls.expression_status'): expression_display,
+            t('api_calls.fitting_score'): f"{call.get('score', 0.0):.4f}",
+            t('api_calls.call_count'): call.get('total_api_calls', 'N/A'),
+            t('api_calls.timestamp'): call.get('timestamp', 'N/A')
         })
     
     df = pd.DataFrame(records)
     st.dataframe(df, use_container_width=True, height=300)
     
     # 状态说明
-    with st.expander("💡 状态图例"):
+    with st.expander(t('api_calls.status_legend')):
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.write("**✅ 成功找到表达式**")
-            st.write("已找到有效的拟合表达式")
+            st.write(t('api_calls.status_success'))
+            st.write(t('api_calls.status_success_desc'))
         with col2:
-            st.write("**⏳ 搜索中**")
-            st.write("正在搜索，尚未生成有效表达式")
+            st.write(t('api_calls.status_searching'))
+            st.write(t('api_calls.status_searching_desc'))
         with col3:
-            st.write("**🔍 探索中**")
-            st.write("模型正在探索不同的表达式")
+            st.write(t('api_calls.status_exploring'))
+            st.write(t('api_calls.status_exploring_desc'))
     
     # 统计信息
-    with st.expander("📈 调用统计"):
+    with st.expander(t('api_calls.call_statistics')):
         col1, col2 = st.columns(2)
         with col1:
-            st.write("**模型使用次数:**")
+            st.write(t('api_calls.model_usage'))
             model_counts = {}
             for call in api_calls:
                 model = call.get('model', 'Unknown')
@@ -133,48 +134,48 @@ def render_api_calls_log(api_calls: List[Dict[str, Any]], max_display: int = 50)
                 st.write(f"- {model}: {count} 次")
             
             # 状态统计
-            st.write("**任务状态统计:**")
+            st.write(t('api_calls.task_status'))
             status_counts = {}
             for call in api_calls:
                 status = call.get('status', 'unknown')
                 status_counts[status] = status_counts.get(status, 0) + 1
             
             status_labels = {
-                'success': '✅ 成功生成表达式',
-                'no_expression': '⏳ 搜索中',
-                'unknown': '🔍 探索中'
+                'success': t('api_calls.status_success_count'),
+                'no_expression': t('api_calls.status_searching_count'),
+                'unknown': t('api_calls.status_exploring_count')
             }
             
             for status, count in status_counts.items():
-                label = status_labels.get(status, f"未知状态({status})")
+                label = status_labels.get(status, t('api_calls.unknown_status', status=status))
                 st.write(f"- {label}: {count} 次")
         
         with col2:
-            st.write("**分数分布:**")
+            st.write(t('api_calls.score_distribution'))
             scores = [call.get('score', 0) for call in api_calls]
             if scores:
                 valid_scores = [s for s in scores if s > 0]
                 if valid_scores:
-                    st.write(f"- 平均分数: {np.mean(scores):.4f}")
-                    st.write(f"- 最高分数: {np.max(scores):.4f}")
-                    st.write(f"- 最低分数: {np.min(scores):.4f}")
-                    st.write(f"- 有效分数记录: {len(valid_scores)}/{len(scores)}")
+                    st.write(f"- {t('api_calls.avg_score', score=np.mean(scores))}")
+                    st.write(f"- {t('api_calls.max_score', score=np.max(scores))}")
+                    st.write(f"- {t('api_calls.min_score', score=np.min(scores))}")
+                    st.write(f"- {t('api_calls.valid_scores', valid=len(valid_scores), total=len(scores))}")
                 else:
-                    st.write(f"- 暂无有效分数")
-                    st.write(f"- 总记录数: {len(scores)}")
+                    st.write(f"- {t('api_calls.no_valid_scores')}")
+                    st.write(f"- {t('api_calls.total_records', count=len(scores))}")
             
             # API调用效率
-            st.write("**API调用效率:**")
+            st.write(t('api_calls.api_efficiency'))
             if api_calls:
                 latest_call = api_calls[-1]
                 total_calls = latest_call.get('total_api_calls', 0)
                 cycles = latest_call.get('cycle', 0)
                 if cycles > 0 and total_calls > 0:
                     avg_calls_per_cycle = total_calls / cycles
-                    st.write(f"- 累计API调用: {total_calls}")
-                    st.write(f"- 每轮平均调用: {avg_calls_per_cycle:.1f}")
+                    st.write(f"- {t('api_calls.total_api_calls', count=total_calls)}")
+                    st.write(f"- {t('api_calls.avg_calls_per_cycle', avg=avg_calls_per_cycle)}")
                 else:
-                    st.write("- 调用统计计算中...")
+                    st.write(f"- {t('api_calls.calculating')}")
 
 
 def render_fitting_comparison(
@@ -194,7 +195,7 @@ def render_fitting_comparison(
         fitted_y: 拟合 y 数据
         expression: 拟合表达式
     """
-    st.markdown("### 📈 拟合结果对比")
+    st.markdown(f"### {t('results.comparison_title')}")
     
     # 创建图表
     fig = go.Figure()
@@ -204,7 +205,7 @@ def render_fitting_comparison(
         x=original_x,
         y=original_y,
         mode='markers',
-        name='原始数据',
+        name=t('results.original_data'),
         marker=dict(size=8, color='#1f77b4', opacity=0.6)
     ))
     
@@ -214,15 +215,15 @@ def render_fitting_comparison(
             x=fitted_x,
             y=fitted_y,
             mode='lines',
-            name='拟合结果',
+            name=t('results.fitted_result'),
             line=dict(color='#ff7f0e', width=3)
         ))
     
     # 更新布局
     fig.update_layout(
-        title="原始曲线 vs 拟合曲线",
-        xaxis_title="x",
-        yaxis_title="y",
+        title=t('results.comparison_chart_title'),
+        xaxis_title=t('results.x_axis'),
+        yaxis_title=t('results.y_axis'),
         hovermode='x unified',
         template='plotly_white',
         height=500
@@ -232,7 +233,7 @@ def render_fitting_comparison(
     
     # 显示拟合表达式
     if expression:
-        st.markdown("### 🔢 拟合表达式")
+        st.markdown(f"### {t('results.fitting_expression')}")
         st.code(expression, language='python')
         
         # 计算拟合误差
@@ -248,11 +249,11 @@ def render_fitting_comparison(
             
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.metric("均方误差 (MSE)", f"{mse:.4f}")
+                st.metric(t('results.mse'), f"{mse:.4f}")
             with col2:
-                st.metric("均方根误差 (RMSE)", f"{rmse:.4f}")
+                st.metric(t('results.rmse'), f"{rmse:.4f}")
             with col3:
-                st.metric("平均绝对误差 (MAE)", f"{mae:.4f}")
+                st.metric(t('results.mae'), f"{mae:.4f}")
 
 
 def render_pareto_frontier(pareto_data: Dict[int, Dict]) -> None:
@@ -262,10 +263,10 @@ def render_pareto_frontier(pareto_data: Dict[int, Dict]) -> None:
     Args:
         pareto_data: Pareto 前沿数据字典
     """
-    st.markdown("### 🎯 Pareto 前沿")
+    st.markdown(f"### {t('pareto.title')}")
     
     if not pareto_data:
-        st.info("暂无 Pareto 前沿数据")
+        st.info(t('pareto.no_data'))
         return
     
     # 提取数据
@@ -292,9 +293,9 @@ def render_pareto_frontier(pareto_data: Dict[int, Dict]) -> None:
     ))
     
     fig.update_layout(
-        title="复杂度 vs 分数 (Pareto 前沿)",
-        xaxis_title="表达式复杂度",
-        yaxis_title="拟合分数",
+        title=t('pareto.chart_title'),
+        xaxis_title=t('pareto.complexity'),
+        yaxis_title=t('pareto.score'),
         template='plotly_white',
         height=400
     )
@@ -302,14 +303,14 @@ def render_pareto_frontier(pareto_data: Dict[int, Dict]) -> None:
     st.plotly_chart(fig, use_container_width=True, key="pareto_frontier_chart")
     
     # 显示详细表格
-    with st.expander("📋 查看详细数据"):
+    with st.expander(t('pareto.detail_data')):
         records = []
         for complexity, info in sorted(pareto_data.items()):
             records.append({
-                '复杂度': complexity,
-                '分数': f"{info.get('score', 0):.2f}",
-                '表达式': info.get('ansatz', 'N/A'),
-                '创建时间': info.get('created_at', 'N/A')
+                t('pareto.complexity_col'): complexity,
+                t('pareto.score_col'): f"{info.get('score', 0):.2f}",
+                t('pareto.expression_col'): info.get('ansatz', 'N/A'),
+                t('pareto.created_time'): info.get('created_at', 'N/A')
             })
         df = pd.DataFrame(records)
         st.dataframe(df, use_container_width=True)
@@ -323,17 +324,17 @@ def render_score_history(score_history: List[float], key_suffix: str = "") -> No
         score_history: 分数历史列表
         key_suffix: 用于生成唯一 key 的后缀
     """
-    st.markdown("### 📉 拟合历史")
+    st.markdown(f"### {t('score_history.title')}")
     
-    with st.expander("ℹ️ 分数计算说明", expanded=False):
-        st.write("**分数计算公式：**")
-        st.code("分数 = 80 - 60 × (mse / linear_mse)", language="text")
-        st.write("其中：")
-        st.write("- `mse`: 当前模型的均方误差")
-        st.write("- `linear_mse`: 线性拟合的均方误差（基准）")
+    with st.expander(t('score_history.score_calculation'), expanded=False):
+        st.write(t('score_history.calculation_formula'))
+        st.code(t('score_history.formula'), language="text")
+        st.write(t('score_history.formula_desc'))
+        st.write(f"- {t('score_history.mse_desc')}")
+        st.write(f"- {t('score_history.linear_mse_desc')}")
     
     if not score_history:
-        st.info("暂无历史数据")
+        st.info(t('score_history.no_history'))
         return
     
     fig = go.Figure()
@@ -342,15 +343,15 @@ def render_score_history(score_history: List[float], key_suffix: str = "") -> No
         x=list(range(1, len(score_history) + 1)),
         y=score_history,
         mode='lines+markers',
-        name='最佳分数',
+        name=t('score_history.best_score'),
         line=dict(color='#2ca02c', width=2),
         marker=dict(size=6)
     ))
     
     fig.update_layout(
-        title="最佳分数随循环变化",
-        xaxis_title="循环次数",
-        yaxis_title="最佳分数",
+        title=t('score_history.chart_title'),
+        xaxis_title=t('score_history.cycle_axis'),
+        yaxis_title=t('score_history.score_axis'),
         template='plotly_white',
         height=300
     )

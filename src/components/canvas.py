@@ -12,6 +12,7 @@ from typing import Tuple, Optional
 import base64
 from io import BytesIO
 from PIL import Image
+from ..utils import t
 
 
 def extract_curve_from_canvas(canvas_result, width: int, height: int) -> Optional[Tuple[np.ndarray, np.ndarray]]:
@@ -142,36 +143,32 @@ def render_drawing_canvas(config: dict) -> dict:
     Returns:
         画布结果
     """
-    st.markdown("### 🎨 绘制目标曲线")
-    st.markdown("在下方画布上绘制您想要拟合的曲线")
+    st.markdown(f"### {t('canvas.title')}")
+    st.markdown(t('canvas.description'))
     
     # 绘制模式选择和图片传递开关
     col1, col2, col3 = st.columns([1, 1, 1])
     with col1:
         drawing_mode = st.selectbox(
-            "绘制模式",
+            t('canvas.drawing_mode'),
             ["freedraw", "line", "point"],
-            format_func=lambda x: {
-                "freedraw": "自由绘制",
-                "line": "直线",
-                "point": "点"
-            }[x],
+            format_func=lambda x: t(f'canvas.modes.{x}'),
             key="drawing_mode"
         )
     
     with col2:
-        stroke_width = st.slider("线条宽度", 1, 10, config.get('stroke_width', 3), key="stroke_width")
+        stroke_width = st.slider(t('canvas.stroke_width'), 1, 10, config.get('stroke_width', 3), key="stroke_width")
     
     with col3:
         use_canvas_image = st.checkbox(
-            "📷 传递图片",
+            t('canvas.use_canvas_image'),
             value=False,
-            help="将画布图片传递给支持视觉的模型（如 Gemini），帮助理解拟合目标。注意：不支持图片的模型会忽略此选项。",
+            help=t('canvas.use_canvas_image_help'),
             key="use_canvas_image"
         )
     
     # 清除按钮（放在画布前面，这样可以先处理清除逻辑）
-    if st.button("🗑️ 清除画布", key="clear_canvas"):
+    if st.button(t('canvas.clear_canvas'), key="clear_canvas"):
         # 删除画布相关的 session state
         if 'canvas_key' in st.session_state:
             st.session_state.canvas_key += 1
